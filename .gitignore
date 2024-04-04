@@ -136,3 +136,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.DS_Store
+.env
+.idea/misc.xml
+.idea/modules.xml
+.idea/remote-mappings.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+OpenAI/test.py
+oa.py
+test.py
+.idea/ADL_unsupervised_learning.iml
