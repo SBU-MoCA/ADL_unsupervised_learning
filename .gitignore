@@ -1,4 +1,12 @@
+*.txt
+*.csv
+*.png
+Time-LLM
+test_data
+ADL_data
+
 # Byte-compiled / optimized / DLL files
+OpenAI/.env
 __pycache__/
 *.py[cod]
 *$py.class
@@ -102,7 +110,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+OpenAI/.env
 .venv
 env/
 venv/
