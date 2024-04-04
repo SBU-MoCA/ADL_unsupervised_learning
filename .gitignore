@@ -1,6 +1,7 @@
 *.txt
 *.csv
 *.png
+*.pth
 Time-LLM
 test_data
 ADL_data
