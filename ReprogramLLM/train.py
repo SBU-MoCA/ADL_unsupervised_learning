@@ -1,4 +1,5 @@
 import os
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
 
 from model import Model
 import torch.nn as nn
@@ -20,18 +21,19 @@ scaler = GradScaler()
 
 from utils import plot_loss
 
-# os.chdir("/home/mengjingliu/ADL_unsupervised_learning/")
+os.chdir("/home/mengjingliu/ADL_unsupervised_learning/")
 # os.environ["CUDA_VISIBLE_DEVICE"] = "1"
 
 configs = {
     "llm_layers": 2,
     "IT": {
-        "in_features": 64,
+        "in_features": 1456,
         "out_features": 64
         
     },
     "OM": {
-        "in_features": 5,
+        "in_features": 262144,
+        # "in_features": 64*256,
         "out_features": 5
         
     },
@@ -41,17 +43,35 @@ configs = {
 }
 
 # model_name_or_path = "prajjwal1/bert-mini"
+# model_name_or_path = "google-bert/bert-base-uncased"
 model_name_or_path = "meta-llama/Llama-2-7b-hf"
-# model_name_or_path = "/home/mengjingliu/llama/llama-2-7b"
 title = model_name_or_path.replace('/', '_')
+
+model = Model(model_name_or_path, configs)
+model = model.half()
+
 
 if torch.cuda.is_available():
     print("CUDA is available. Training on GPU.")
+    model = nn.DataParallel(model)
+    model.to("cuda")
+
 else:
     print("CUDA is not available. Training on CPU.")
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-model = Model(model_name_or_path, configs, device)
+# model = Model(model_name_or_path, configs).to(device)
+# model = model.half()
+
+# print(model.dtype)
+
+trained_parameters = []
+
+for p in model.parameters():
+    if p.requires_grad is True:
+        trained_parameters.append(p)
+optimizer = torch.optim.SGD(trained_parameters, lr=0.1)
+scheduler = ExponentialLR(optimizer, gamma=0.98)
 
 criterion = nn.CrossEntropyLoss()  # For classification tasks
 
@@ -60,21 +80,11 @@ path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
              "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR4",
              "/home/mengjingliu/Vid2Doppler/data/2023_11_17/HAR3",
              "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR2"]
-train_loader, test_loader = data_loader(path_list, batch_size=16)
-
-# # Dummy dataset
-# x_train = np.load("../test_data/X_4.npy")[:, np.newaxis, :, :]
-# y_train = np.load("../test_data/Y_4.npy") - 1
-#
-# # Create a DataLoader
-# train_dataset = TensorDataset(torch.from_numpy(x_train).float(), torch.from_numpy(y_train).long())
-# train_loader = DataLoader(dataset=train_dataset, batch_size=16)
+train_loader, test_loader = data_loader(path_list, batch_size=1)
 
 training_losses = []
 test_losses = []
 test_accuracies = []
-
-trained_parameters = []
 
 test_interval = 10
 
@@ -84,39 +94,29 @@ for epoch in range(100):  # Loop over the dataset multiple times
         running_loss = 0.0
         for inputs, labels in train_loader:
             
-            # trained parameters and optimizer are assigned after one Forward pass, because:
-            # linear layers are created after forward method is called once,
-            # so the trained parameters are created after that.
-            if len(trained_parameters) == 0:
-
-                # Forward pass
-                with autocast():
-                    outputs = model(inputs)
-
-                for p in model.parameters():
-                    if p.requires_grad is True:
-                        trained_parameters.append(p)
-                
-                # if os.path.exists(f"results/best_model_{title}.pth"):
-                #     state_dict = torch.load(f"results/best_model_{title}.pth")
-                #     model.load_state_dict(state_dict)
-                optimizer = torch.optim.SGD(trained_parameters, lr=0.001)
-                scheduler = ExponentialLR(optimizer, gamma=0.98)
-                model = model.to(device)
-            else:
-                optimizer.zero_grad()
-                with autocast():
-                    inputs, labels = inputs.to(device), labels.to(device)
-                    # Forward pass
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-    
-                # Backward pass and optimize
-                scaler.scale(loss).backward()
-                optimizer.step()
-        
-                running_loss += loss.item()
+            # if os.path.exists(f"results/best_model_{title}.pth"):
+            #     state_dict = torch.load(f"results/best_model_{title}.pth")
+            #     model.load_state_dict(state_dict)
             
+            optimizer.zero_grad()
+            with autocast():
+                inputs, labels = inputs.to("cuda"), labels.to("cuda")
+                # Forward pass
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+                # Backward pass and optimize
+                loss.backward()
+                # scaler.scale(loss).backward()
+            optimizer.step()
+            # scaler.unscale_(optimizer)
+
+            # scaler.step(optimizer)
+            # torch.nn.utils.clip_grad_norm_(model.parameters())
+            # scaler.update()
+    
+            running_loss += loss.item()
+        
         training_losses.append(running_loss / len(train_loader))
             
         scheduler.step()
@@ -126,12 +126,12 @@ for epoch in range(100):  # Loop over the dataset multiple times
     outputs = torch.tensor([])
     labels = torch.tensor([])
     for input, label in test_loader:
-        input, label = input.to(device), label.to(device)
+        # input, label = input.to(device), label.to(device)
         # Forward pass
-        output = model(input)
-        loss = criterion(output, label)
+        output = model(input.cuda())
+        loss = criterion(output, label.cuda())
         test_loss += loss.item()
-        outputs = torch.cat([outputs, output])
+        outputs = torch.cat([outputs, output.to("cpu")])
         labels = torch.cat([labels, label])
     
     test_losses.append(test_loss / len(test_loader))
@@ -145,6 +145,8 @@ for epoch in range(100):  # Loop over the dataset multiple times
     
     if accuracy > best_accuracy:
         best_accuracy = accuracy
+
+        # do not save the whole model. should only save trainable parameters
         torch.save(model.state_dict(), f'ReprogramLLM/results/best_model_{title}.pth')
         print(f"Epoch {epoch * test_interval + k + 1}: New best model found and saved.")
     

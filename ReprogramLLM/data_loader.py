@@ -39,10 +39,10 @@ def data_loader(path_list, batch_size=16, train_size=0.8):
 			X_test = np.vstack([x1_test, X_test])
 			y_test = np.concatenate([y1_test, y_test])
 		
-	train_dataset = TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).long())
+	train_dataset = TensorDataset(torch.from_numpy(X_train).half(), torch.from_numpy(y_train).long())
 	train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 	
-	test_dataset = TensorDataset(torch.from_numpy(X_test).float(), torch.from_numpy(y_test).long())
+	test_dataset = TensorDataset(torch.from_numpy(X_test).half(), torch.from_numpy(y_test).long())
 	test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 	
 	return train_loader, test_loader
