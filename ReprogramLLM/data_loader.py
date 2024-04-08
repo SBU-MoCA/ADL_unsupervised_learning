@@ -3,9 +3,10 @@ import os
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 import torch
+import torch.nn.functional as F
 
 
-def data_loader(path_list, batch_size=16, train_size=0.8):
+def load_dataFile(path_list, train_size=0.8):
 	
 	X_train = []
 	y_train = []
@@ -17,16 +18,6 @@ def data_loader(path_list, batch_size=16, train_size=0.8):
 		y1 = np.load(os.path.join(path, "Y_4.npy")) - 1
 		x1_train, x1_test, y1_train, y1_test = train_test_split(x1, y1, train_size=train_size, random_state=42)
 		
-		# path2 = "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR5"
-		# x2 = np.load(os.path.join(path2, "X_4.npy"))
-		# y2 = np.load(os.path.join(path2, "Y_4.npy"))
-		# x2_train, x2_test, y2_train, y2_test = train_test_split(x2, y2, train_size=0.8, random_state=42)
-		#
-		# path3 = "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR4"
-		# x3 = np.load(os.path.join(path3, "X_4.npy"))
-		# y3 = np.load(os.path.join(path3, "Y_4.npy"))
-		# _, x3_test, _, y3_test = train_test_split(x3, y3, test_size=0.2, random_state=42)
-		#
 		if len(X_train) == 0:
 			X_train = x1_train
 			y_train = y1_train
@@ -38,11 +29,47 @@ def data_loader(path_list, batch_size=16, train_size=0.8):
 		
 			X_test = np.vstack([x1_test, X_test])
 			y_test = np.concatenate([y1_test, y_test])
-		
-	train_dataset = TensorDataset(torch.from_numpy(X_train).half(), torch.from_numpy(y_train).long())
+
+	return torch.from_numpy(X_train).float(), torch.from_numpy(y_train).long(), torch.from_numpy(X_test).float(), torch.from_numpy(X_test).float()
+
+def resize_tensor(train_data, test_data, size=(224, 224)):
+	resized_train_data = F.interpolate(train_data, size=size,mode='bilinear', align_corners=False)
+	resized_test_data = F.interpolate(test_data, size=size,mode='bilinear', align_corners=False)
+	return resized_train_data, resized_test_data
+
+
+def convert_to_dataset(train_data, train_label, test_data, test_label):
+	train_dataset = TensorDataset(train_data, train_label)
+	test_dataset = TensorDataset(test_data, test_label)
+	return train_dataset, test_dataset
+
+
+def data_loader(train_dataset, test_dataset, batch_size=16):
 	train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-	
-	test_dataset = TensorDataset(torch.from_numpy(X_test).half(), torch.from_numpy(y_test).long())
 	test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
-	
 	return train_loader, test_loader
+
+
+def wrapper_dataLoader(path_list, train_size=0.8, batch_size=16, if_resize=False):
+	train_data, train_label, test_data, test_label = load_dataFile(path_list, train_size=train_size)
+	if if_resize:
+		train_data, test_data = resize_tensor(train_data, test_data)
+	train_set, test_set = convert_to_dataset(train_data, train_label, test_data, test_label)
+	train_loader, test_loader = data_loader(train_set, test_set, batch_size=batch_size)
+	return train_loader, test_loader
+
+
+if __name__ == "__main__":
+	path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
+				"/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR5",
+				"/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR4",
+				"/home/mengjingliu/Vid2Doppler/data/2023_11_17/HAR3",
+				"/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR2"]
+	train_data, train_label, test_data, test_label = load_dataFile(path_list, train_size=0.8)
+	train_data, test_data = resize_tensor(train_data, test_data)
+	train_set, test_set = convert_to_dataset(train_data, train_label, test_data, test_label)
+	train_loader, test_loader = data_loader(train_set, test_set, batch_size=16)
+
+
+
+
