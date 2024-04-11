@@ -22,7 +22,7 @@ from helper import first_peak
 import matplotlib
 from scipy.signal import find_peaks
 from helper import load_txt_to_datetime, seg_index, apply_lowpass_filter
-from load_data_from_csv import load_csv
+from ADL_unsupervised_learning.export_data_from_influxDB.load_data_from_csv import load_csv
 
 
 # need to decide the range
