@@ -114,11 +114,12 @@ for epoch in range(num_epochs):
         lr_scheduler.step()
         logging.info(f'Epoch {epoch * test_interval + k + 1}, Training Loss: {running_loss / len(train_loader)}')
     
-    model.eval()
+    # model.eval() does not freeze the model, it only changes behavior of dropout, batchNorm or layers have different behaviors for training and inference.
+    model.eval()        
     test_loss = 0.0
     outputs_all = torch.tensor([])
     labels_all = torch.tensor([])
-    with torch.no_grad():
+    with torch.no_grad():       # this context is for inference, it can save GPU memory
         for batch in test_loader:
             inputs, labels = batch
             inputs = inputs.to(device)

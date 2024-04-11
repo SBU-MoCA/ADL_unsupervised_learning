@@ -150,3 +150,5 @@ test.py
 .idea/ADL_unsupervised_learning.iml
 ViT/X_test.npy
 ViT/y_test.npy
+X_test.npy
+y_test.npy

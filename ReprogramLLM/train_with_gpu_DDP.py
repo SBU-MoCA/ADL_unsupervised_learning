@@ -1,11 +1,3 @@
-"""
-train wit hmultiple GPUs with nn.DataParallel.
-It replicates the model to multiple GPUs, split data to those GPUs for computation, use GPU 0 (by default) to gather and concatenate outputs from GPUs.
-
-
-It only helps when data set is too large. In our case, the schema doesn't help.
-"""
-
 import sys
 sys.path.append("/home/mengjingliu/ADL_unsupervised_learning/")
 import os
@@ -24,12 +16,31 @@ import datetime
 
 from torch.cuda.amp import autocast, GradScaler
 
+import torch.distributed as dist
+import torch.utils.data.distributed
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+# Set environment variables
+os.environ['MASTER_ADDR'] = 'localhost'    # Adjust as necessary
+os.environ['MASTER_PORT'] = '12355'        # Choose an open port
+os.environ['RANK'] = '0'                   # Example: process 0
+os.environ['WORLD_SIZE'] = '2'             # Example: 2 processes
+
+# Initialize the process group
+# dist.init_process_group(backend='nccl', init_method='env://')
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+
+# Initialize the distributed environment.
+dist.init_process_group(backend='nccl')
+
 scaler = GradScaler()
 
 from utils import plot_loss
 
 os.chdir("/home/mengjingliu/ADL_unsupervised_learning/")
 # os.environ["CUDA_VISIBLE_DEVICE"] = "1"
+
+
 
 configs = {
     "llm_layers": 2,
@@ -60,17 +71,12 @@ model = model.half()
 
 if torch.cuda.is_available():
     print("CUDA is available. Training on GPU.")
-    model = nn.DataParallel(model)
-    model.to("cuda")
+    model.cuda()
+    model = DDP(model)
+
 
 else:
     print("CUDA is not available. Training on CPU.")
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# model = Model(model_name_or_path, configs).to(device)
-# model = model.half()
-
-# print(model.dtype)
 
 trained_parameters = []
 
@@ -112,10 +118,8 @@ for epoch in range(100):  # Loop over the dataset multiple times
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
 
-                # torch.cuda.empty_cache()    # does not help
-
                 # Backward pass and optimize
-                loss.backward()                 # GPU out of memory here
+                loss.backward()
                 # scaler.scale(loss).backward()
             optimizer.step()
             # scaler.unscale_(optimizer)
