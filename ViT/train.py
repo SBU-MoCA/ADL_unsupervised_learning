@@ -34,31 +34,10 @@ title = model_name_or_path.replace('/', '_') + "_standard"
 # Load a pre-trained Vision Transformer model
 model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5)
 
-# class ViTModelWrapper(torch.nn.Module):
-#     def __init__(self, model):
-#         super().__init__()
-#         self.model = model
-    
-#     def forward(self, pixel_values):
-#         # Adjust this based on the specific model and your inputs
-#         outputs = self.model(pixel_values=pixel_values)
-#         return outputs.logits  # Return only the logits
-
-# model = ViTModelWrapper(original_model)
-
 # Define the device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Move model to device
 model.to(device)
-
-# if torch.cuda.is_available():
-#     device = torch.device("cuda")
-#     model = model.to(device)
-#     model = nn.DataParallel(model)
-
-
-
-# summary(model, input_size=(3, 224, 224), device='cuda')
 
 # Define the optimizer
 optimizer = Adam(model.parameters(), lr=1e-3)
