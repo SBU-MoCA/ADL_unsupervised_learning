@@ -30,28 +30,37 @@ path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
 train_loader, test_loader = wrapper_dataLoader(path_list, batch_size=16, if_resize=True, if_replicate_channels=True)
 
 model_name_or_path = "google/vit-base-patch16-224-in21k"
-title = model_name_or_path.replace('/', '_') + "_standard"
+title = model_name_or_path.replace('/', '_') + "_finetuneAll_Drop20"
+
+
+from transformers import ViTConfig
+configuration = ViTConfig(
+    hidden_dropout_prob = 0.2,
+    attention_probs_dropout_prob = 0.2
+
+)
+
 # Load a pre-trained Vision Transformer model
-model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5)
+model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5, config=configuration)
 
 # Define the device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Move model to device
 model.to(device)
 
-# Freeze all parameters
-for param in model.parameters():
-    param.requires_grad = False
+# # Freeze all parameters
+# for param in model.parameters():
+#     param.requires_grad = False
 
-# Assuming the last layer is named 'classifier' in ViTForImageClassification
-# Unfreeze the parameters of the last layer
-for param in model.classifier.parameters():
-    param.requires_grad = True
+# # Assuming the last layer is named 'classifier' in ViTForImageClassification
+# # Unfreeze the parameters of the last layer
+# for param in model.classifier.parameters():
+#     param.requires_grad = True
 
-optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
+# optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
 
 # Define the optimizer
-# optimizer = Adam(model.parameters(), lr=1e-3)
+optimizer = Adam(model.parameters(), lr=1e-3)
 lr_scheduler = ExponentialLR(optimizer, gamma=0.98)
 
 # Define the loss function
