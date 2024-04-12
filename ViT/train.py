@@ -39,19 +39,19 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Move model to device
 model.to(device)
 
-# # Freeze all parameters
-# for param in model.parameters():
-#     param.requires_grad = False
+# Freeze all parameters
+for param in model.parameters():
+    param.requires_grad = False
 
-# # Assuming the last layer is named 'classifier' in ViTForImageClassification
-# # Unfreeze the parameters of the last layer
-# for param in model.classifier.parameters():
-#     param.requires_grad = True
+# Assuming the last layer is named 'classifier' in ViTForImageClassification
+# Unfreeze the parameters of the last layer
+for param in model.classifier.parameters():
+    param.requires_grad = True
 
-# optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
+optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
 
 # Define the optimizer
-optimizer = Adam(model.parameters(), lr=1e-3)
+# optimizer = Adam(model.parameters(), lr=1e-3)
 lr_scheduler = ExponentialLR(optimizer, gamma=0.98)
 
 # Define the loss function
