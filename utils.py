@@ -6,8 +6,8 @@ import numpy as np
 
 def plot_loss(path, filename, training_loss, test_loss, test_accuracy, test_interval=10):
 	plt.plot(training_loss, label='Training Loss')
-	plt.plot(np.arange(1, len(test_loss)+1, 1) * test_interval, test_loss, label='Val Loss')
-	plt.plot(np.arange(1, len(test_accuracy)+1, 1) * test_interval, test_accuracy, label='Val Accuracy')
+	plt.plot(np.arange(0, len(test_loss), 1) * test_interval, test_loss, label='Val Loss')
+	plt.plot(np.arange(0, len(test_accuracy), 1) * test_interval, test_accuracy, label='Val Accuracy')
 	plt.xlabel('Epochs')
 	plt.ylabel('Loss & Accuracy')
 	
