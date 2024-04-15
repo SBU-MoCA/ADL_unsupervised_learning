@@ -31,7 +31,7 @@ path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
 train_loader, test_loader = wrapper_dataLoader(path_list, batch_size=16, if_resize=True, if_replicate_channels=True)
 
 model_name_or_path = "google/vit-base-patch16-224-in21k"
-title = model_name_or_path.replace('/', '_') + "_LoRA"
+title = "finetuneLoRA_" + model_name_or_path.replace('/', '_')
 # Load a pre-trained Vision Transformer model
 model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5)
 
@@ -79,11 +79,51 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'  # Date format
 )
 
+
+def evaluate(model, test_loader, test_accuracies, test_losses, epoch=0, best_accuracy=0):
+    # model.eval() does not freeze the model, it only changes behavior of dropout, batchNorm or layers have different behaviors for training and inference.
+    model.eval()        
+    test_loss = 0.0
+    outputs_all = torch.tensor([])
+    labels_all = torch.tensor([])
+    with torch.no_grad():       # this context is for inference, it can save GPU memory
+        for batch in test_loader:
+            inputs, labels = batch
+            inputs = inputs.to(device)
+
+            outputs = model(inputs).logits.to("cpu")
+            loss = loss_fn(outputs, labels)
+            test_loss += loss.item()
+
+            outputs_all = torch.cat([outputs_all, outputs])
+            labels_all = torch.cat([labels_all, labels])
+    
+    test_losses.append(test_loss / len(test_loader))
+    
+    accuracy = Accuracy(task="multiclass", num_classes=5).to(device)
+    accuracy = accuracy(outputs, labels)
+    test_accuracies.append(accuracy.item())
+    logging.info(f'Epoch {epoch}, Testing Loss: {test_loss / len(test_loader)}, Testing accuracy: {accuracy}')
+  
+    if accuracy >= best_accuracy:
+        logging.info(f"Epoch {epoch}, New best model found and saved. Previous test accuracy: {best_accuracy}, current test accuracy: {accuracy}")
+
+        best_accuracy = accuracy
+        # do not save the whole model. should only save trainable parameters
+        torch.save(model.state_dict(), os.path.join(path, f'best_model_{title}.pth'))
+    
+    logging.info("--------------------------------------------------------------")
+    return best_accuracy
+
+
+
 training_losses = []
 test_losses = []
 test_accuracies = []
 best_accuracy = 0
 # Training loop
+
+evaluate(model, test_loader, test_accuracies, test_losses)
 
 for epoch in range(num_epochs):
     model.train()
@@ -114,38 +154,7 @@ for epoch in range(num_epochs):
         lr_scheduler.step()
         logging.info(f'Epoch {epoch * test_interval + k + 1}, Training Loss: {running_loss / len(train_loader)}')
     
-    # model.eval() does not freeze the model, it only changes behavior of dropout, batchNorm or layers have different behaviors for training and inference.
-    model.eval()        
-    test_loss = 0.0
-    outputs_all = torch.tensor([])
-    labels_all = torch.tensor([])
-    with torch.no_grad():       # this context is for inference, it can save GPU memory
-        for batch in test_loader:
-            inputs, labels = batch
-            inputs = inputs.to(device)
-
-            outputs = model(inputs).logits.to("cpu")
-            loss = loss_fn(outputs, labels)
-            test_loss += loss.item()
-
-            outputs_all = torch.cat([outputs_all, outputs])
-            labels_all = torch.cat([labels_all, labels])
-    
-    test_losses.append(test_loss / len(test_loader))
-    
-    accuracy = Accuracy(task="multiclass", num_classes=5).to(device)
-    accuracy = accuracy(outputs, labels)
-    test_accuracies.append(accuracy.item())
-    logging.info(f'Epoch {epoch * test_interval + k + 1}, Testing Loss: {test_loss / len(test_loader)}, Testing accuracy: {accuracy}')
-  
-    if accuracy >= best_accuracy:
-        logging.info(f"Epoch {epoch * test_interval + k + 1}, New best model found and saved. Previous test accuracy: {best_accuracy}, current test accuracy: {accuracy}")
-
-        best_accuracy = accuracy
-        # do not save the whole model. should only save trainable parameters
-        torch.save(model.state_dict(), os.path.join(path, f'best_model_{title}.pth'))
-    
-    logging.info("--------------------------------------------------------------")
+    best_accuracy = evaluate(model, test_loader, test_accuracies, test_losses, epoch=epoch * test_interval + k + 1, best_accuracy=best_accuracy)
     
     plot_loss(path, f"loss_{title}.png", np.array(training_losses), np.array(test_losses), np.array(test_accuracies), test_interval)
     

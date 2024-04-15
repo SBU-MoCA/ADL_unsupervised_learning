@@ -27,10 +27,10 @@ path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
              "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR4",
              "/home/mengjingliu/Vid2Doppler/data/2023_11_17/HAR3",
              "/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR2"]
-train_loader, test_loader = wrapper_dataLoader(path_list, batch_size=32, if_resize=True, if_replicate_channels=True)
+train_loader, test_loader = wrapper_dataLoader(path_list, batch_size=16, if_resize=True, if_replicate_channels=True)
 
 model_name_or_path = "google/vit-base-patch16-224-in21k"
-title = model_name_or_path.replace('/', '_') + "_finetuneLastLayer"
+title = "finetuneLastLayer_" + model_name_or_path.replace('/', '_')
 
 model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5)
 
@@ -47,6 +47,11 @@ for param in model.parameters():
 # Unfreeze the parameters of the last layer
 for param in model.classifier.parameters():
     param.requires_grad = True
+
+
+from module import cnt_trainable_params
+cnt_trainable_params(model)
+
 
 optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
 
@@ -100,7 +105,7 @@ def evaluate(model, test_loader, test_accuracies, test_losses, epoch=0, best_acc
     test_accuracies.append(accuracy.item())
     logging.info(f'Epoch {epoch}, Testing Loss: {test_loss / len(test_loader)}, Testing accuracy: {accuracy}')
   
-    if accuracy >= best_accuracy:
+    if accuracy >= best_accuracy:   # save the latest best model
         logging.info(f"Epoch {epoch}, New best model found and saved. Previous test accuracy: {best_accuracy}, current test accuracy: {accuracy}")
 
         best_accuracy = accuracy

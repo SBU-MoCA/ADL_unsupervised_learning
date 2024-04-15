@@ -30,26 +30,37 @@ path_list = ["/home/mengjingliu/Vid2Doppler/data/2023_07_19/HAR6",
 train_loader, test_loader = wrapper_dataLoader(path_list, batch_size=16, if_resize=True, if_replicate_channels=True)
 
 model_name_or_path = "google/vit-base-patch16-224-in21k"
-title = "finetuneAll_" + model_name_or_path.replace('/', '_')
+title = "finetuneAll_Drop20_" + model_name_or_path.replace('/', '_')
 
 
-# from transformers import ViTConfig
-# configuration = ViTConfig(
-#     hidden_dropout_prob = 0.2,
-#     attention_probs_dropout_prob = 0.2
+from transformers import ViTConfig
+configuration = ViTConfig(
+    num_labels=5,
+    hidden_dropout_prob = 0.2,
+    attention_probs_dropout_prob = 0.2
 
-# )
+)
 
-# # Load a pre-trained Vision Transformer model
-# model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5, config=configuration)
-model = ViTForImageClassification.from_pretrained(model_name_or_path, num_labels=5)
+# Load a pre-trained Vision Transformer model
+model = ViTForImageClassification.from_pretrained(model_name_or_path, config=configuration)
 
 # Define the device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Move model to device
 model.to(device)
 
-# # Define the optimizer
+# # Freeze all parameters
+# for param in model.parameters():
+#     param.requires_grad = False
+
+# # Assuming the last layer is named 'classifier' in ViTForImageClassification
+# # Unfreeze the parameters of the last layer
+# for param in model.classifier.parameters():
+#     param.requires_grad = True
+
+# optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
+
+# Define the optimizer
 optimizer = Adam(model.parameters(), lr=1e-3)
 lr_scheduler = ExponentialLR(optimizer, gamma=0.98)
 
@@ -72,7 +83,6 @@ training_losses = []
 test_losses = []
 test_accuracies = []
 best_accuracy = 0
-# Training loop
 
 def evaluate(model, test_loader, test_accuracies, test_losses, epoch=0, best_accuracy=0):
     # model.eval() does not freeze the model, it only changes behavior of dropout, batchNorm or layers have different behaviors for training and inference.
@@ -99,7 +109,7 @@ def evaluate(model, test_loader, test_accuracies, test_losses, epoch=0, best_acc
     test_accuracies.append(accuracy.item())
     logging.info(f'Epoch {epoch}, Testing Loss: {test_loss / len(test_loader)}, Testing accuracy: {accuracy}')
   
-    if accuracy >= best_accuracy:
+    if accuracy >= best_accuracy:   # save the latest best model
         logging.info(f"Epoch {epoch}, New best model found and saved. Previous test accuracy: {best_accuracy}, current test accuracy: {accuracy}")
 
         best_accuracy = accuracy
@@ -111,6 +121,8 @@ def evaluate(model, test_loader, test_accuracies, test_losses, epoch=0, best_acc
 
 
 evaluate(model, test_loader, test_accuracies, test_losses)
+
+# Training loop
 
 for epoch in range(num_epochs):
     model.train()
@@ -142,7 +154,6 @@ for epoch in range(num_epochs):
         logging.info(f'Epoch {epoch * test_interval + k + 1}, Training Loss: {running_loss / len(train_loader)}')
     
     best_accuracy = evaluate(model, test_loader, test_accuracies, test_losses, epoch=epoch * test_interval + k + 1, best_accuracy=best_accuracy)
-
     
     plot_loss(path, f"loss_{title}.png", np.array(training_losses), np.array(test_losses), np.array(test_accuracies), test_interval)
     
