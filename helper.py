@@ -1,10 +1,10 @@
 import os.path
 
 import numpy as np
-from scipy.signal import find_peaks
+# from scipy.signal import find_peaks
 import datetime
 from datetime import timedelta, timezone
-from scipy.signal import butter, lfilter
+# from scipy.signal import butter, lfilter
 
 
 def butter_lowpass(cutoff, fs, order=5):
@@ -57,7 +57,7 @@ def datetime_from_str(str):
                     try:
                         r = datetime.datetime.strptime(str.strip('\n'), '%Y-%m-%dT%H:%M:%S.%fZZ')
                     except Exception as e:
-                        print(str)
+                        print("exception: ", str)
                         return ""
     return r
 

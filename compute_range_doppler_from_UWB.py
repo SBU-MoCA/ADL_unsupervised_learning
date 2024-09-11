@@ -1,7 +1,6 @@
 """
 load segment file of the data session, load .csv datafile to .npy.
-read each segment of baseband data and plot range profile and Doppler.
-
+plot range doppler in video, plot segment line of each activity.
 
 """
 
