@@ -15,7 +15,7 @@ import datetime
 from datetime import timedelta, datetime
 
 
-def segment_video(rgb_ts_file, minutes_start, seconds_start, minutes_stop, seconds_stop, fr=24):
+def segment_video(rgb_ts_file, minutes_start, seconds_start, minutes_stop, seconds_stop, fr=15):
 	"""
 return the start datetime and stop datetime of each activity, in local timezone,
 given the start time and stop time of the activity in the video and the frame timestamps (rgb_ts.txt) of the video.
@@ -86,17 +86,17 @@ def convert_manual_segment_file_to_AppFormat(manual_seg_filename, rgb_ts_file, a
 	print(f"App format seggment file: {app_seg_path}/{app_seg_filename}")
 	
 	
-# if __name__ == "__main__":
+if __name__ == "__main__":
 	# input the start and stop time of an activity in the video. format: [start minutes, start second, stop minute, stop second]
 	segs = [
-		[0, 43, 0, 47],
-		[0, 53, 1, 6],
-		[1, 9, 1, 29],
-		[1, 32, 1, 39],
-		[1, 41, 1, 46],
-		[1, 48, 1, 56]
+		[0, 44, 0, 49],
+		# [0, 53, 1, 6],
+		# [1, 9, 1, 29],
+		# [1, 32, 1, 39],
+		# [1, 41, 1, 46],
+		# [1, 48, 1, 56]
 	]
 	for seg in segs:
-		segment_video("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YhsHv0_ADL_1/rgb_ts.txt", seg[0], seg[1],
+		segment_video("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2/rgb_ts.txt", seg[0], seg[1],
 		              seg[2], seg[3])
 
