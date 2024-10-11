@@ -1,7 +1,12 @@
+import sys
+sys.path.append("/home/mengjingliu/ADL_unsupervised_learning/")
+
 import csv
 import os.path
 from helper import datetime_from_str
 import numpy as np
+
+from config import nodes
 
 
 def load_csv(path, filename):
@@ -36,7 +41,10 @@ def load_csv(path, filename):
 					print(row)
 					header_line = False
 				else:
-					data[row[-3]].append(row[-4])
+					try:
+						data[row[-3]].append(row[-4])
+					except Exception as e:
+						print(row)
 	
 	# concatenate
 	imag = data_last_frame["imaginary"]
@@ -72,7 +80,11 @@ def load_csv(path, filename):
 	
 
 if __name__ == "__main__":
-	path = "/home/mengjingliu/ADL_data/I2HSeJ_ADL_1"
-	filename = "b8-27-eb-02-d4-0b.csv"
-	load_csv(path, filename)
-	
+	path = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/RQAKB1_ADL_1"
+	for node in nodes:
+		print(node)
+		filename = f"{node}.csv"
+		try:
+			load_csv(path, filename)
+		except Exception as e:
+			print(e)

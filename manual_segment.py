@@ -15,7 +15,7 @@ import datetime
 from datetime import timedelta, datetime
 
 
-def segment_video(rgb_ts_file, minutes_start, seconds_start, minutes_stop, seconds_stop, fr=15):
+def segment_video(rgb_ts_file, minutes_start, seconds_start, minutes_stop, seconds_stop, fr=24):
 	"""
 return the start datetime and stop datetime of each activity, in local timezone,
 given the start time and stop time of the activity in the video and the frame timestamps (rgb_ts.txt) of the video.
@@ -25,7 +25,8 @@ given the start time and stop time of the activity in the video and the frame ti
 		seconds_start:
 		minutes_stop:
 		seconds_stop:
-		fr: frame rate of video
+		fr: frame rate of video. 
+		This is different from real time frame rate in real world timeline. the frame rate of video is defined by the video writing code (which is 24 in our case), and the time of the video is different from the real time.
 	"""
 	# dur = timedelta(minutes=minutes, seconds=seconds)
 	frame_num_start = (minutes_start * 60 + seconds_start) * fr
