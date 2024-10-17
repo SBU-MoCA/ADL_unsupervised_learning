@@ -11,14 +11,14 @@ import cv2
 
 
 def color_scale(img, norm, text=None):
-	if len(img.shape) == 2:
-		img = cm.magma(norm(img), bytes=True)
-	img = imutils.resize(img, height=300)
-	if img.shape[2] == 4:
-		img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
-	if text is not None:
-		img = cv2.putText(img, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-	return img
+    if len(img.shape) == 2:
+        img = cm.magma(norm(img), bytes=True)
+    img = imutils.resize(img, height=300)
+    if img.shape[2] == 4:
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
+    if text is not None:
+        img = cv2.putText(img, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    return img
 
 
 def butter_lowpass(cutoff, fs, order=5):
@@ -87,15 +87,40 @@ def load_txt_to_datetime(path, filename):
         return [datetime_from_str(line, tzinfo=timezone.utc) for line in lines]     # indicate the timezone is UTC time
 
 
-def load_segment_file_to_datetime(path, filename, if_local=True, start_seg=0, stop_seg=None):
+def load_segment_file_to_datetime_new(seg_file):
+    """
+    load App format segment file from android app, return activity list and datetime list [start, stop].
+    example: Walk to kitchen - start: 2024-10-15 17:27:20.015,stop: 2024-10-15 17:27:33.322
+    
+    Args:
+        seg_file: segment file, absolute/relative path
+
+    Returns: datetime list [start, stop], UTC time; activity list
+
+    """
+    dt = []
+    acts = []
+    with open(seg_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            act = line.strip('\n').split(' - ')[0]
+            acts.append(act)
+            try:
+                ss = line.strip('\n').split(' - ')[1].split(',')
+            except Exception as e:
+                print("not formative line in segment file: ", line)
+            dt.append([datetime_from_str(ss[0][7:]).astimezone(timezone.utc), datetime_from_str(ss[1][6:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
+        return dt, acts
+
+
+def load_segment_file_to_datetime(seg_file, start_seg=0, stop_seg=None, year=2023):
     """
     load App format segment file from android app, return datetime list [start, stop].
-    APP segment file format: "activity name - start: datetime,stop: datetime"
+    APP segment file format: "activity, datetime, datetime". Load shifted datetimes in UTC time.
     In 2023, it is local time. In 2024, it is utc time.
     
     Args:
-        path:
-        filename:
+        seg_file: segment file, absolute/relative path
         if_local: if the time from android app is local time. if it is, set timezone to UTC.
 
     Returns: datetime list [start, stop], UTC time; activity list
@@ -103,7 +128,7 @@ def load_segment_file_to_datetime(path, filename, if_local=True, start_seg=0, st
     """
     dt = []
     acts = []
-    with open(os.path.join(path, filename), 'r') as f:
+    with open(seg_file, 'r') as f:
         lines = f.readlines()
          
         cnt = 0
@@ -111,37 +136,76 @@ def load_segment_file_to_datetime(path, filename, if_local=True, start_seg=0, st
             if cnt < start_seg:
                 cnt += 1
                 continue
-            if cnt > stop_seg:
+            if stop_seg is not None and cnt > stop_seg:
                 break
             cnt += 1
-            act = line.strip('\n').split(' - ')[0]
+            act = line.strip('\n').split(', ')[0]
             acts.append(act)
             try:
-                ss = line.strip('\n').split(' - ')[1].split(',')
+                ss = line.strip('\n').split(', ')[1:]
             except Exception as e:
                 print(line)
-            if datetime_from_str(ss[0][6:]).year < 2024:
-                dt.append([datetime_from_str(ss[0][6:]).astimezone(timezone.utc), datetime_from_str(ss[1][5:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
-            else:
-                dt.append([datetime_from_str(ss[0][6:], tzinfo=timezone.utc), datetime_from_str(ss[1][5:], tzinfo=timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
-
-            # print(ss[0][6:], ss[1][5:], "\n", datetime_from_str(ss[0][6:]), datetime_from_str(ss[1][5:]), "\n", datetime_from_str(ss[0][6:]).astimezone(timezone.utc), datetime_from_str(ss[1][5:]).astimezone(timezone.utc), "\n\n")
-    return dt, acts
+            dt.append([datetime_from_str(ss[0], tzinfo=timezone.utc), datetime_from_str(ss[1], tzinfo=timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
+        return dt, acts
 
 
 def dt_delta(dt1, dt2):
     return (dt1 - dt2).seconds * 1e6 + (dt1 - dt2).microseconds
 
 
-def seg_index(path, filename, path_seg, filename_seg, start_seg=0, stop_seg=None):
+def seg_index_new(dt, seg_file, start_seg=0, stop_seg=None):
     """
-load segment file (format: start: datetime, stop: datetime) and UWB frame timestamp file, find the frame indices of each segment in UWB data,
-return the frame indices of each segment in UWB date.
+    load segment file (format example: Walk to kitchen - start: 2024-10-15 17:27:20.015,stop: 2024-10-15 17:27:33.322) and 
+    UWB frame timestamp file, find the frame indices of each segment in UWB data.
+    """
+    seg, acts = load_segment_file_to_datetime_new(seg_file)     # load segmentation from android app
+    print("segmentation: ", seg)
+    print("acts: ", acts)
+
+    i = 0   # current segment index
+    start_ind = 0
+    stop_ind = len(dt)
+    indices = []
+    acts_found = []
+    for j in range(1, len(dt)):    # find the start and stop index for each segment
+        t = dt[j]
+        while i < len(seg):
+            start, stop = seg[i][0], seg[i][1]
+            if t <= start:
+                start_ind = j
+                break
+            if stop >= t > start and start_ind == 0:
+                start_ind = j
+                break
+            if stop >= t > start and start_ind != 0:
+                stop_ind = j
+                break
+            if t > stop and stop_ind != len(dt):
+                print("activity {}, start: {}, stop: {}, index: {} ~ {}".format(acts[i], str(start), str(stop), start_ind,
+                                                                                stop_ind))
+                acts_found.append(acts[i])
+                indices.append([start_ind, stop_ind])
+                i += 1
+                start_ind = 0
+                stop_ind = len(dt)
+                break
+            if t > stop and stop_ind == len(dt):
+                print(f"activity {i}, {acts[i]} is lost")
+                i += 1
+                start_ind = 0
+                stop_ind = len(dt)
+            
+    return indices, acts_found
+
+
+
+def seg_index(dt, seg_file, start_seg=0, stop_seg=None):
+    """
+    load segment file (format: start: datetime, stop: datetime) and UWB frame timestamp file, find the frame indices of each segment in UWB data,
+    return the frame indices of each segment in UWB date.
     Args:
-        path: UWB timestamp file path
-        filename: UWB timestamp file name
-        path_seg: segment file path
-        filename_seg: segment file name
+        dt: UWB datetime (UTC time) list for each frame after aligned with video time
+        seg_file: segment file, absolute/relative path
         start_seg: which segment to start
         stop_seg: which segment to stop
 
@@ -149,53 +213,55 @@ return the frame indices of each segment in UWB date.
     Assume UWB timestamp, imaginary, real data files are aligned row by row, the returned indices are used to read UWB data for each activity.
 
     """
-    # path = "/home/mengjingliu/ADL_data/I2HSeJ_ADL_1"
-    # filename = "b8-27-eb-85-a7-83.csv"
-
-    node_id = filename.split('.')[0]
-    ts_uwb_file = os.path.join(path, node_id + '_timestamp.txt')
     
-    # path_seg = "/home/mengjingliu/ADL_data/2023-07-03-segment"
-    # filename_seg = "2023-07-03-16-50-45_I2HSeJ_ADL_1.txt"
-    
-    dt = load_txt_to_datetime(path, ts_uwb_file)    # load timestamp of each data frame
-    seg, acts = load_segment_file_to_datetime(path_seg, filename_seg, start_seg=start_seg, stop_seg=stop_seg)     # load segmentation from android app
+    seg, _ = load_segment_file_to_datetime(seg_file, start_seg=start_seg, stop_seg=stop_seg)     # load segmentation from android app
+    # print("segmentation: ", seg)
 
-    i = 0
-    start, stop = seg[i][0], seg[i][1]
+    acts = []
+    with open("ADL_data/2023-07-03-segment/script.txt", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            acts.append(line.strip('\n').split('. ')[0])
+    
+    i = 0   # current segment index
     start_ind = 0
     stop_ind = len(dt)
     indices = []
-    next_act = False
-    for j in range(len(dt)):    # find the start and stop index for each segment
+    acts_found = []
+    for j in range(1, len(dt)):    # find the start and stop index for each segment
         t = dt[j]
         if t - dt[j-1] > timedelta(seconds=60):
             print("data loss {} minutes".format((t - dt[j-1]).seconds/60))
-        if start_ind == 0:
-            if (t < start and dt_delta(start, t) < 1e5) or (start <= t < stop and dt_delta(t, start) <= 1e5):
+        while i < len(seg):
+            # print(f"i: {i}")
+            start, stop = seg[i][0], seg[i][1]
+            if t <= start:
                 start_ind = j
-                continue
-        if start_ind != 0:
-            if (start <= t < stop and dt_delta(stop, t) <= 1e5) or (t >= stop and dt_delta(t, stop) <= 1e5):
+                # print(f"activity {i}, start: {start_ind}")
+                break
+            if stop >= t > start and start_ind == 0:
+                start_ind = j
+                # print(f"activity {i}, start: {start_ind}")
+                break
+            if stop >= t > start and start_ind != 0:
                 stop_ind = j
+                break
+            if t > stop and stop_ind != len(dt):
                 print("activity {}, start: {}, stop: {}, index: {} ~ {}".format(i, str(start), str(stop), start_ind,
                                                                                 stop_ind))
+                acts_found.append(acts[i])
                 indices.append([start_ind, stop_ind])
-                next_act = True
-            if t >= stop and (t - stop) >= timedelta(seconds=3):
-                print("activity {}, data loss {} seconds around stop point".format(i, (t - dt[j-1]).seconds))
-                next_act = True
-            if next_act:
+                i += 1
                 start_ind = 0
                 stop_ind = len(dt)
+                break
+            if t > stop and stop_ind == len(dt):
+                print(f"activity {i} is lost")
                 i += 1
-                if (stop_seg is not None and i > stop_seg) or (stop_seg is None and i >= len(seg)):
-                    break
-                else:
-                    start, stop = seg[i][0], seg[i][1]
-                next_act = False
+                start_ind = 0
+                stop_ind = len(dt)
             
-    return indices, acts
+    return indices, acts_found
 
 
 def find_index(start, stop, dt):
