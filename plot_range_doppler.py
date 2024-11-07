@@ -144,15 +144,16 @@ def plot_range_doppler(session_path, shifted_seg_file, node_num, shift_sensor_ti
 
 
 if __name__ == "__main__":
-	# for node_num in range(1, 16):
-	# 	if node_num in [10, 11, 12, 16]:	
-	# 		continue
-	# 	try:
-	# 		print(f"sensor: {node_num}")
-	# 		plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2", "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment/YpyRw1_shifted.txt", node_num, [0, -5])
-	# 	except Exception as e:
-	# 		print(e)
-	# 		continue
-	# plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2", "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment/YpyRw1_shifted.txt", 2, [0, -5])
-	plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/8F33UK", "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment/2024-10-15-17-22-48_8F33UK.txt", 
-					5, [0, 0], new_version=True)
+	for node_num in range(1, 16):
+		if node_num in [5,7,16]:	
+			continue
+		try:
+			print(f"sensor: {node_num}")
+			plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/85XB4Y", "ADL_data/2023-07-03-segment/2024-10-15-16-09-56_85XB4Y.txt", 
+					node_num, [0, 0], new_version=True)
+			# plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2", "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment/YpyRw1_shifted.txt", node_num, [0, 0])
+		except Exception as e:
+			print(e)
+			continue
+	# plot_range_doppler("/home/mengjingliu/ADL_unsupervised_learning/ADL_data/8F33UK", "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment/2024-10-15-17-22-48_8F33UK.txt", 
+	# 				7, [0, 0], new_version=True)

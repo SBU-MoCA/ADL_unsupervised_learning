@@ -159,8 +159,8 @@ def seg_index_new(dt, seg_file, start_seg=0, stop_seg=None):
     UWB frame timestamp file, find the frame indices of each segment in UWB data.
     """
     seg, acts = load_segment_file_to_datetime_new(seg_file)     # load segmentation from android app
-    print("segmentation: ", seg)
-    print("acts: ", acts)
+    # print("segmentation: ", seg)
+    # print("acts: ", acts)
 
     i = 0   # current segment index
     start_ind = 0
@@ -181,8 +181,8 @@ def seg_index_new(dt, seg_file, start_seg=0, stop_seg=None):
                 stop_ind = j
                 break
             if t > stop and stop_ind != len(dt):
-                print("activity {}, start: {}, stop: {}, index: {} ~ {}".format(acts[i], str(start), str(stop), start_ind,
-                                                                                stop_ind))
+                # print("activity {}, start: {}, stop: {}, index: {} ~ {}".format(acts[i], str(start), str(stop), start_ind,
+                #                                                                 stop_ind))
                 acts_found.append(acts[i])
                 indices.append([start_ind, stop_ind])
                 i += 1

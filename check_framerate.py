@@ -14,11 +14,11 @@ def check_fr_UWB(node_id):
         lines = file.readlines()
         for ts in lines:
             dt = datetime_from_str(ts)
-            if dt < datetime_from_str("2023-06-29 20:00:00"):
-                continue
+            # if dt < datetime_from_str("2023-06-29 20:00:00"):
+            #     continue
             dts.append(dt)
 
-    avg_fr = (len(dts) + 1) / (dts[-1] - dts[0]).seconds
+    avg_fr = len(dts) / (dts[-1] - dts[0]).seconds
     print(f"average frame rate of UWB {node_id}: ", avg_fr)
     plt.plot(dts, np.arange(1, len(dts) + 1))
     plt.xlabel("time (second)")
