@@ -1,9 +1,12 @@
-This repository includes
-1. ADL data processing
-2. finetune ViT in multiple ways using M4X dataset: finetune last layer, fully finetune, LoRA
+## This repository includes
+1. ADL data processing, data integrity checking
+2. finetune ViT in multiple ways using M4X dataset: finetune last layer, fully finetune, LoRA, w/o dropout layers on CNN/FF layers
 3. train a ViT from scratch using M4X dataset
-4. reprogram a ViT for M4X dataset
+4. reprogram llama for M4X dataset
 5. CoT a llava model (not finished)
+
+## Packages
+model (for llama from huggingface), transformers (for ViT)
 
 ## Segment and load data from InfluxDB
 1. watch video on Box and record segmentation information in file.
