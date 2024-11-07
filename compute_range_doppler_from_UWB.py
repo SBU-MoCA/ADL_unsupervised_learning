@@ -1,11 +1,14 @@
 """
 load segment file of the data session, load .csv datafile to .npy.
-plot range doppler in figure, plot segment line of each activity.
+plot range doppler in video, plot segment line of each activity.
 
 """
 
 import os
 import subprocess
+# import random
+# import math
+# import time
 import numpy as np
 # import shutil
 import seaborn as sns
