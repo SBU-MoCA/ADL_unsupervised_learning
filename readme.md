@@ -1,3 +1,6 @@
+##
+I don't work on this repository since 2025-11-7 because this one is public and I don't have full access.
+
 ## This repository includes
 1. ADL data processing, data integrity checking
 2. finetune ViT in multiple ways using M4X dataset: finetune last layer, fully finetune, LoRA, w/o dropout layers on CNN/FF layers
