@@ -2,10 +2,10 @@
 plot range doppler in video, plot segment line of each activity.
 
 varaibles:
-node_num: the index of sensor node
+node_idx: the index of sensor node
 path: the path of the UWB data session
 path_seg: the path of the segment file
-filename_seg: the name of the segment file for this session
+filename_seg_shifted: the name of the segment file for this session after time shift
 script_file: the name of the script file
 fps_uwb: the frame rate of UWB sensor. By default, it is 120 FPS. But different UWB sensor may have slights different frame rates.
 	run check_fr_UWB() in check_framerate.py to check the frame rate of UWB sensor.
@@ -34,19 +34,19 @@ from datetime import timedelta
 from config import nodes_info
 
 
-node_num = 16
-node_id = nodes_info[node_num]["id"]
-left, right = nodes_info[node_num]["range"]
+node_idx = 16
 path = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2"
-filename = f"{node_id}.csv"
-
 
 path_seg = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment"
-filename_seg = "YpyRw1.txt"
+filename_seg_shifted = "YpyRw1_shifted.txt"
 
 script_file = "ADL_data/2023-07-03-segment/script.txt"
 fps_uwb = 116.1
 
+############################################################################################################
+node_id = nodes_info[node_idx]["id"]
+left, right = nodes_info[node_idx]["range"]
+filename = f"{node_id}.csv"
 doppler = []
 doppler_bin_num = 32
 DISCARD_BINS = [15, 16]
@@ -103,7 +103,7 @@ for d in doppler:
 
     dd = color_scale(d[:, left:right], matplotlib.colors.Normalize(vmin=mmin, vmax=mmax), " ")
     if flag:
-        out_vid = cv2.VideoWriter(os.path.join(path, f'range_doppler_sensor_{node_num}.mpg'),
+        out_vid = cv2.VideoWriter(os.path.join(path, f'range_doppler_sensor_{node_idx}.mpg'),
                                 cv2.VideoWriter_fourcc(*'mp4v'),
                                 15, (dd.shape[1], dd.shape[0]))
         flag = False
@@ -137,8 +137,8 @@ print("frame number:", len(doppler))
 
 print("Video of range doppler generated.")
 
-subprocess.call(['ffmpeg', '-y', '-i', os.path.join(path, f'range_doppler_sensor_{node_num}.mpg'),
-				 os.path.join(path, f'range_doppler_sensor_{node_num}.mp4')])
+subprocess.call(['ffmpeg', '-y', '-i', os.path.join(path, f'range_doppler_sensor_{node_idx}.mpg'),
+				 os.path.join(path, f'range_doppler_sensor_{node_idx}.mp4')])
 
-subprocess.call(['rm', os.path.join(path, f'range_doppler_sensor_{node_num}.mpg')])
+subprocess.call(['rm', os.path.join(path, f'range_doppler_sensor_{node_idx}.mpg')])
 exit(0)
