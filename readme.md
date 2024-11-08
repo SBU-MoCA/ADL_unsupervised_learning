@@ -1,5 +1,8 @@
 ##
-I don't work on this repository since 2025-11-7 because this one is public and I don't have full access.
+Not updated since 2025-11-8. Move to ADL_Detection.
+
+## Generate range doppler video from baseband data"
+run plot_range_doppler_before_calibration.py
 
 ## This repository includes
 1. ADL data processing, data integrity checking
