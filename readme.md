@@ -1,8 +1,29 @@
 ##
 Not updated since 2025-11-8. Move to ADL_Detection.
 
-## Generate range doppler video from baseband data"
-run plot_range_doppler_before_calibration.py
+## Time Alignment for ADL data in 2023
+### Align Android app to camera
+#### Get anchor time from video
+- Video and timestamp for each video frame is on BoX. You can NOT download video from BoX. You can download the rgb_ts.txt file.
+- watch the video, get the time of starting "sit on the couch and watch the video on the monitor [2 min]. (Click "Start"!)". Usually you can see clearly the person clicks on the phone before stiing on the couch.
+- record the time of the action in video file, (e.g. 5 minuets 6 second). Calculate the video frame index. video FPS=24. (e.g. (5*60+6)*24=7344).
+- read the corresponding timestamp of the video frame from rgb_ts.txt. (e.g. in the 7244th line. convert timestamp to datetime format.). Denote by Tv.
+#### Get anchor time from app
+- read start time ar the 11th line of the segmentation file, which is the timestamp recorded on the phone while starting "sit on the couch and watch the video on the monitor [2 min]. (Click "Start"!)". Denote by Ta.
+#### Calculate time shift
+- Tv - Ta
+
+### Align sensor to camera
+#### Get anchor time from video
+- watch the video from HAR2, record the timestamp when the person gets nearest the sensor, i.e. walking towards couch and standing there for 1~2 seconds.
+- get the timestamp of the action in the same way. Denote by Tv2.
+#### Get anchor time from sensor
+- Generate range doppler video from baseband data. Run plot_range_doppler_before_calibration.py
+- watch the doppler video, record the time in doppler video when you see the person walking towards the sensor to the nearest point. e.g. (2 minutes 3 seconds)
+- calculate doppler frame index (e.g. (2*60+3)*24=2952). calculate corresponding baseband data frame index. (e.g. 2952*5=14760)
+- read the timestamp file of uwb sensor data. (e.g. at the 14760th line.). Denote by Ts.
+#### Calculate time shif
+- Tv2 - Ts
 
 ## This repository includes
 1. ADL data processing, data integrity checking
