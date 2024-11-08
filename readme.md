@@ -13,7 +13,7 @@ Video and timestamp for each video frame is on BoX. You can NOT download video f
 #### Calculate time shift
 - Tv - Ta
 
-### Correct the segmentation file using (Tv - Ta)
+#### Correct the segmentation file using (Tv - Ta)
 - run time_shift() in manual_segment.py. input the time shift (Tv - Ta).
 - *_shifted.txt will be saved under the same segmentation path.
 
