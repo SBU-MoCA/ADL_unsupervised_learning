@@ -2,10 +2,10 @@
 Not updated since 2025-11-8. Move to ADL_Detection.
 
 ## Time Alignment for ADL data in 2023
+Video and timestamp for each video frame is on BoX. You can NOT download video from BoX. You can download the rgb_ts.txt file.
 ### Align Android app to camera
 #### Get anchor time from video
-- Video and timestamp for each video frame is on BoX. You can NOT download video from BoX. You can download the rgb_ts.txt file.
-- watch the video, get the time of starting "sit on the couch and watch the video on the monitor [2 min]. (Click "Start"!)". Usually you can see clearly the person clicks on the phone before stiing on the couch.
+- watch the video on HAR2, get the time of starting "sit on the couch and watch the video on the monitor [2 min]. (Click "Start"!)". Usually you can see clearly the person clicks on the phone before stiing on the couch.
 - record the time of the action in video file, (e.g. 5 minuets 6 second). Calculate the video frame index. video FPS=24. (e.g. (5*60+6)*24=7344).
 - read the corresponding timestamp of the video frame from rgb_ts.txt. (e.g. in the 7244th line. convert timestamp to datetime format.). Denote by Tv.
 #### Get anchor time from app
