@@ -7,15 +7,22 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def check_fr_UWB(node_id):
+def check_fr_UWB(node_id, start_time=None, end_time=None):
+    """
+    node_id: node index
+    start_time: start time of the time period to check the frame rate. str, e.g. "2023-07-03 12:00:00"
+    stop_time: end time of the time period to check the frame rate. str, e.g. "2023-07-03 12:05:00"
+    """
     ts_uwb_file = os.path.join(path, node_id + '_timestamp.txt')    # timestamp of UWB data, downloaded from cloud DB. 
     dts = []
     with open(ts_uwb_file, "r") as file:
         lines = file.readlines()
         for ts in lines:
             dt = datetime_from_str(ts)
-            # if dt < datetime_from_str("2023-06-29 20:00:00"):
-            #     continue
+            if dt < datetime_from_str(start_time):
+                continue
+            if dt > datetime_from_str(end_time):
+                break
             dts.append(dt)
 
     avg_fr = len(dts) / (dts[-1] - dts[0]).seconds

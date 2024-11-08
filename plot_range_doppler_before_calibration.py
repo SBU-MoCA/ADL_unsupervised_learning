@@ -1,6 +1,14 @@
 """
-load segment file of the data session, load .csv datafile to .npy.
 plot range doppler in video, plot segment line of each activity.
+
+varaibles:
+node_num: the index of sensor node
+path: the path of the UWB data session
+path_seg: the path of the segment file
+filename_seg: the name of the segment file for this session
+script_file: the name of the script file
+fps_uwb: the frame rate of UWB sensor. By default, it is 120 FPS. But different UWB sensor may have slights different frame rates.
+	run check_fr_UWB() in check_framerate.py to check the frame rate of UWB sensor.
 
 """
 
@@ -26,7 +34,7 @@ from datetime import timedelta
 from config import nodes_info
 
 
-node_num = 10
+node_num = 16
 node_id = nodes_info[node_num]["id"]
 left, right = nodes_info[node_num]["range"]
 path = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2"
@@ -34,16 +42,14 @@ filename = f"{node_id}.csv"
 
 
 path_seg = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment"
-filename_seg = "YpyRw1_shifted.txt"
+filename_seg = "YpyRw1.txt"
 
-shift_sensor_time = [0, -5] # add 0 minute and -5 seconds to align with the video
-
-node_id = filename.split('.')[0]
+script_file = "ADL_data/2023-07-03-segment/script.txt"
+fps_uwb = 116.1
 
 doppler = []
 doppler_bin_num = 32
 DISCARD_BINS = [15, 16]
-fps_uwb = 116.1
 
 # load raw data
 imag_file = os.path.join(path, node_id + '_imaginary.npy')
@@ -64,13 +70,12 @@ data_complex = data_real + 1j * data_imag  # compute complex number
 
 # load timestamps of each UWB baseband data frame
 dt = load_txt_to_datetime(path, ts_uwb_file)    # load timestamp of each data frame
-dt = [t + timedelta(minutes=shift_sensor_time[0], seconds=shift_sensor_time[1]) for t in dt] # shift the timestamp to align with the video
 
 indices, acts = seg_index(dt, path_seg, filename_seg, 0, None)
 print(indices)
 
 acts = []
-with open("ADL_data/2023-07-03-segment/script.txt", "r") as f:
+with open(script_file, "r") as f:
 	lines = f.readlines()
 	for line in lines:
 		acts.append(line.strip('\n').split('. ')[0])
@@ -137,45 +142,3 @@ subprocess.call(['ffmpeg', '-y', '-i', os.path.join(path, f'range_doppler_sensor
 
 subprocess.call(['rm', os.path.join(path, f'range_doppler_sensor_{node_num}.mpg')])
 exit(0)
-
-
-# activity = 1
-for ss, act in zip(indices, acts):
-	start, stop = ss[0], ss[1]
-	range_profile_seg = range_profile[start:stop, :]
-	# locate moving object
-	std_dis = np.std(range_profile_seg, axis=0)
-	std_dis = apply_lowpass_filter(std_dis, 0.5)
-	
-	hp = sns.heatmap(np.transpose(range_profile_seg))
-	# plt.axvline(x=left, color='r')
-	# plt.axvline(x=right, color='r')
-	plt.title("range profile of activity {}".format(act))
-	plt.xlabel("time (1/{} second)".format(fps_uwb))
-	plt.ylabel("range bin")
-	hp.figure.savefig(os.path.join(path, "range_profile_{}_{}.png".format(act, node_num)))
-	plt.show()
-	
-	# compute doppler
-	doppler_from_UWB = []
-	doppler_1d = []
-	for i in range(start + doppler_bin_num, stop, 2):
-		d_fft = np.abs(np.fft.fft(data_complex[i - doppler_bin_num:i, :], axis=0))  # FFT
-		d_fft = np.fft.fftshift(d_fft, axes=0)  # shifts
-		# d_fft[DISCARD_BINS, :] = np.zeros((len(DISCARD_BINS), d_fft.shape[1]))
-		doppler_from_UWB.append(d_fft)
-
-		fft_gt = np.copy(d_fft[:, left:right])
-		fft_gt[DISCARD_BINS, :] = np.zeros((len(DISCARD_BINS), right - left))
-		# sum over range
-		fft_gt = np.sum(fft_gt, axis=1)
-		doppler_1d.append(fft_gt)
-	# doppler_1d = (doppler_1d - np.min(doppler_1d)) / (np.max(doppler_1d) - np.min(doppler_1d))
-	hp = sns.heatmap(np.transpose(doppler_1d))
-	plt.title("doppler of activity {}".format(act))
-	plt.ylabel("doppler")
-	plt.xlabel("time")
-	hp.figure.savefig(os.path.join(path, "doppler_{}_{}.png".format(act, node_num)))
-	plt.show()
-	
-	activity += 1
