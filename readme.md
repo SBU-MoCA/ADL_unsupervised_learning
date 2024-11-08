@@ -13,17 +13,23 @@ Not updated since 2025-11-8. Move to ADL_Detection.
 #### Calculate time shift
 - Tv - Ta
 
+### Correct the segmentation file using (Tv - Ta)
+- run time_shift() in manual_segment.py. input the time shift (Tv - Ta).
+- *_shifted.txt will be saved under the same segmentation path.
+
 ### Align sensor to camera
 #### Get anchor time from video
 - watch the video from HAR2, record the timestamp when the person gets nearest the sensor, i.e. walking towards couch and standing there for 1~2 seconds.
 - get the timestamp of the action in the same way. Denote by Tv2.
 #### Get anchor time from sensor
-- Generate range doppler video from baseband data. Run plot_range_doppler_before_calibration.py
+- Generate range doppler video from baseband data. Run plot_range_doppler_before_calibration.py. 
 - watch the doppler video, record the time in doppler video when you see the person walking towards the sensor to the nearest point. e.g. (2 minutes 3 seconds)
+  - Since we use shifted segmentation which is aligned with video (not aligned with sensor yet), the ground truth may be slightly time shifted from the pattern you observed in Doppler video.
 - calculate doppler frame index (e.g. (2*60+3)*24=2952). calculate corresponding baseband data frame index. (e.g. 2952*5=14760)
 - read the timestamp file of uwb sensor data. (e.g. at the 14760th line.). Denote by Ts.
 #### Calculate time shif
 - Tv2 - Ts
+- record the time shift in a file. e.g. {session_id}_{sensor_idx}_timeshift.npy. [2, 3]
 
 ## This repository includes
 1. ADL data processing, data integrity checking
