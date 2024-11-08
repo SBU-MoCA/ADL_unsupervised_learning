@@ -2,9 +2,10 @@
 Not updated since 2025-11-8. Move to ADL_Detection.
 
 ## Time Alignment for ADL data in 2023
-Video and timestamp for each video frame is on BoX. You can NOT download video from BoX. You can download the rgb_ts.txt file.
-Since all cameras and sensor are collected to network, we assume there is not much time shift between them. So we only calibrate using one camera and one senosor.
-Considering each data session is about 30 minutes, we only calibrate once for each session and assume time shift does not change within the session.
+- Video and timestamp for each video frame is on BoX. You can NOT download video from BoX. You can download the rgb_ts.txt file.
+- Since all cameras and sensor are collected to network, we assume there is not much time shift between them. So we only calibrate using one camera and one senosor.
+- Considering each data session is about 30 minutes, we only calibrate once for each session and assume time shift does not change within the session.
+  
 ### Align Android app to camera
 #### Get anchor time from video
 - watch the video on HAR2, get the time of starting "sit on the couch and watch the video on the monitor [2 min]. (Click "Start"!)". Usually you can see clearly the person clicks on the phone before stiing on the couch.
