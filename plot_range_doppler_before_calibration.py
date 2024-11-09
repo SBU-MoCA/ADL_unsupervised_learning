@@ -35,9 +35,9 @@ from config import nodes_info
 
 
 node_idx = 16
-path = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/YpyRw1_ADL_2"
+path = "/home/mengjingliu/ADL_Detection/ADL_data/YpyRw1_ADL_2"
 
-path_seg = "/home/mengjingliu/ADL_unsupervised_learning/ADL_data/2023-07-03-segment"
+path_seg = "/home/mengjingliu/ADL_Detection/ADL_data/2023-07-03-segment"
 filename_seg_shifted = "YpyRw1_shifted.txt"
 
 script_file = "ADL_data/2023-07-03-segment/script.txt"
@@ -52,26 +52,19 @@ doppler_bin_num = 32
 DISCARD_BINS = [15, 16]
 
 # load raw data
-imag_file = os.path.join(path, node_id + '_imaginary.npy')
-real_file = os.path.join(path, node_id + '_real.npy')
+complex_file = os.path.join(path, node_id + '_complex.npy')
 ts_uwb_file = os.path.join(path, node_id + '_timestamp.txt')
 
-if not os.path.exists(imag_file):
+if not os.path.exists(complex_file):
 	load_csv(path, filename)
 ts_UWB = load_txt_to_datetime(path, ts_uwb_file)	# load timestamps
-data_imag = np.load(imag_file)      # load imaginary part
-data_real = np.load(real_file)      # load real part
-number_of_frames = min(len(data_imag), len(data_real))
-print("imaginary file: {} lines, real file: {} lines".format(len(data_imag), len(data_real)))
-data_imag = data_imag[0:number_of_frames]
-data_real = data_real[0:number_of_frames]
 
-data_complex = data_real + 1j * data_imag  # compute complex number
+data_complex = np.load(complex_file)
 
 # load timestamps of each UWB baseband data frame
 dt = load_txt_to_datetime(path, ts_uwb_file)    # load timestamp of each data frame
 
-indices, acts = seg_index(dt, path_seg, filename_seg, 0, None)
+indices, acts = seg_index(dt, path_seg, filename_seg_shifted, 0, None)
 print(indices)
 
 acts = []
