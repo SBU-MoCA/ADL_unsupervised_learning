@@ -107,10 +107,11 @@ def load_segment_file_to_datetime_new(seg_file):
             acts.append(act)
             try:
                 ss = line.strip('\n').split(' - ')[1].split(',')
+                dt.append([datetime_from_str(ss[0][7:]).astimezone(timezone.utc), datetime_from_str(ss[1][6:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
             except Exception as e:
                 print("not formative line in segment file: ", line)
-            dt.append([datetime_from_str(ss[0][7:]).astimezone(timezone.utc), datetime_from_str(ss[1][6:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
         return dt, acts
+
 
 
 def load_segment_file_to_datetime(seg_file, start_seg=0, stop_seg=None, year=2023):

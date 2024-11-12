@@ -22,23 +22,26 @@ def time_shift(app_seg_path, app_seg_filename, shift_minute, shift_second):
 	Then shift the app time by minute and second to align with video time, 
 	"""
 	dts = []
+	acts = []
 	with open(os.path.join(app_seg_path, app_seg_filename), 'r') as f:
 		lines = f.readlines()
-			
 		for line in lines:
+			act = line.strip('\n').split(' - ')[0]
+			acts.append(act)
 			try:
-				ss = line.strip('\n').split(',')
+				ss = line.strip('\n').split(' - ')[1].split(',')
+				dts.append([datetime_from_str(ss[0][7:]).astimezone(timezone.utc), datetime_from_str(ss[1][6:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
 			except Exception as e:
-				print(line)
-			dts.append([datetime_from_str(ss[0][6:]).astimezone(timezone.utc), datetime_from_str(ss[1][5:]).astimezone(timezone.utc)])   # convert timezone to UTC time. default is the local time of the OS
-
+				print("not formative line in segment file: ", line)
+        
 	shifted_segment_file = app_seg_filename.split('.')[0] + "_shifted.txt"
 	with open(os.path.join(app_seg_path, shifted_segment_file), 'w') as f:
 		for i in range(len(dts)):
 			dts[i][0] = dts[i][0] + timedelta(minutes=shift_minute, seconds=shift_second)
 			dts[i][1] = dts[i][1] + timedelta(minutes=shift_minute, seconds=shift_second)
 			print(f"{i+1}, {dts[i][0].strftime('%Y-%m-%d %H:%M:%S.%f')}, {dts[i][1].strftime('%Y-%m-%d %H:%M:%S.%f')}")
-			f.write(f"{i+1}, {dts[i][0].strftime('%Y-%m-%d %H:%M:%S.%f')}, {dts[i][1].strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
+		for dt, act in zip(dts, acts):
+			f.write(f"{act} - start: {dt[0].strftime('%Y-%m-%d %H:%M:%S.%f')},stop: {dt[1].strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
 	return dts
 
 
